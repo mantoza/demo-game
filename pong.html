@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong - Coin Rush</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #0d0d0d 0%, #1a0a2e 50%, #0d0d0d 100%);
+            font-family: 'Orbitron', monospace;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 800px;
+            padding: 1rem 0;
+            color: #fff;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .stat-value {
+            color: #00f5d4;
+            font-weight: 700;
+            font-size: 1.5rem;
+            text-shadow: 0 0 20px rgba(0, 245, 212, 0.5);
+        }
+
+        .coins {
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #7b2cbf, #9d4edd);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 0 0 30px rgba(157, 78, 221, 0.4);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 8px;
+            box-shadow: 
+                0 0 0 2px rgba(255, 255, 255, 0.1),
+                0 0 60px rgba(157, 78, 221, 0.3),
+                inset 0 0 100px rgba(0, 0, 0, 0.5);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .overlay h2 {
+            font-size: 3rem;
+            color: #00f5d4;
+            text-shadow: 0 0 40px rgba(0, 245, 212, 0.6);
+            margin-bottom: 1rem;
+        }
+
+        .overlay p {
+            color: #888;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00f5d4, #00bbf9);
+            border: none;
+            padding: 1rem 3rem;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0d0d0d;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 245, 212, 0.4);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 50px rgba(0, 245, 212, 0.6);
+        }
+
+        .instructions {
+            margin-top: 2rem;
+            color: #555;
+            font-size: 0.8rem;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .level-complete {
+            color: #ffd700 !important;
+        }
+
+        .game-over-text {
+            color: #ff006e !important;
+        }
+
+        .final-stats {
+            display: flex;
+            gap: 3rem;
+            margin: 1.5rem 0;
+        }
+
+        .final-stat {
+            text-align: center;
+        }
+
+        .final-stat-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+        }
+
+        .final-stat-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .username-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(0, 245, 212, 0.3);
+            padding: 0.8rem 1.5rem;
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            color: #00f5d4;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            width: 300px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .username-input:focus {
+            outline: none;
+            border-color: #00f5d4;
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.4);
+        }
+
+        .username-input::placeholder {
+            color: #555;
+        }
+
+        .leaderboard {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            max-height: 400px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid rgba(157, 78, 221, 0.5);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #fff;
+            font-size: 0.85rem;
+            overflow-y: auto;
+            z-index: 5;
+            backdrop-filter: blur(10px);
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(157, 78, 221, 0.3);
+        }
+
+        .leaderboard-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #9d4edd;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .refresh-btn {
+            background: rgba(157, 78, 221, 0.2);
+            border: 1px solid rgba(157, 78, 221, 0.5);
+            color: #9d4edd;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-family: 'Orbitron', monospace;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(157, 78, 221, 0.4);
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank {
+            font-weight: 700;
+            color: #00f5d4;
+            width: 30px;
+        }
+
+        .rank.top1 { color: #ffd700; }
+        .rank.top2 { color: #c0c0c0; }
+        .rank.top3 { color: #cd7f32; }
+
+        .leaderboard-username {
+            flex: 1;
+            margin-left: 0.5rem;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .leaderboard-score {
+            color: #9d4edd;
+            font-weight: 700;
+            margin-left: 0.5rem;
+        }
+
+        .leaderboard-coins {
+            color: #ffd700;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .user-rank {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid rgba(0, 245, 212, 0.3);
+            text-align: center;
+        }
+
+        .user-rank-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .user-rank-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #00f5d4;
+            text-shadow: 0 0 20px rgba(0, 245, 212, 0.5);
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-size: 0.8rem;
+            padding: 1rem;
+        }
+
+        .error {
+            color: #ff006e;
+            font-size: 0.8rem;
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        .save-status {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #00f5d4;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="hud">
+            <div class="stat">
+                <div>
+                    <div class="stat-label">Score</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+            </div>
+            <div class="level-badge" id="level-badge">LEVEL 1</div>
+            <div class="stat">
+                <div>
+                    <div class="stat-label">Coins</div>
+                    <div class="stat-value coins" id="coins">0 🪙</div>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="game" width="800" height="500"></canvas>
+
+        <div class="leaderboard" id="leaderboard">
+            <div class="leaderboard-header">
+                <div class="leaderboard-title">🏆 Leaderboard</div>
+                <button class="refresh-btn" onclick="loadLeaderboard()">↻</button>
+            </div>
+            <div id="leaderboard-content" class="loading">Loading...</div>
+        </div>
+
+        <div class="overlay" id="start-overlay">
+            <h2>Ping Pong</h2>
+            <p>Coin Rush Edition</p>
+            <input type="text" 
+                   class="username-input" 
+                   id="username-input" 
+                   placeholder="Enter your username" 
+                   maxlength="20"
+                   autocomplete="off">
+            <button class="btn" onclick="startGame()">Start Game</button>
+            <div class="instructions">
+                Move mouse or use ← → arrow keys to control paddle<br>
+                Collect coins for bonus points • Complete 2 levels to win!
+            </div>
+        </div>
+
+        <div class="overlay hidden" id="level-overlay">
+            <h2 class="level-complete">Level Complete!</h2>
+            <div class="final-stats">
+                <div class="final-stat">
+                    <div class="final-stat-value" id="level-score">0</div>
+                    <div class="final-stat-label">Score</div>
+                </div>
+                <div class="final-stat">
+                    <div class="final-stat-value coins" id="level-coins">0</div>
+                    <div class="final-stat-label">Coins</div>
+                </div>
+            </div>
+            <button class="btn" onclick="nextLevel()">Next Level →</button>
+        </div>
+
+        <div class="overlay hidden" id="win-overlay">
+            <h2 class="level-complete">🏆 You Win!</h2>
+            <p>Congratulations! You've conquered both levels!</p>
+            <div class="final-stats">
+                <div class="final-stat">
+                    <div class="final-stat-value" id="final-score">0</div>
+                    <div class="final-stat-label">Total Score</div>
+                </div>
+                <div class="final-stat">
+                    <div class="final-stat-value coins" id="final-coins">0</div>
+                    <div class="final-stat-label">Total Coins</div>
+                </div>
+            </div>
+            <div id="win-rank" class="save-status"></div>
+            <button class="btn" onclick="restartGame()">Play Again</button>
+        </div>
+
+        <div class="overlay hidden" id="gameover-overlay">
+            <h2 class="game-over-text">Game Over</h2>
+            <p>The ball got past you!</p>
+            <div class="final-stats">
+                <div class="final-stat">
+                    <div class="final-stat-value" id="go-score">0</div>
+                    <div class="final-stat-label">Score</div>
+                </div>
+                <div class="final-stat">
+                    <div class="final-stat-value coins" id="go-coins">0</div>
+                    <div class="final-stat-label">Coins</div>
+                </div>
+            </div>
+            <div id="go-rank" class="save-status"></div>
+            <button class="btn" onclick="restartGame()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        let gameRunning = false;
+        let score = 0;
+        let coins = 0;
+        let level = 1;
+        let ballsHit = 0;
+        const ballsPerLevel = 10;
+        let currentUsername = '';
+        const API_URL = window.location.origin.includes('localhost') 
+            ? 'http://localhost:3000' 
+            : window.location.origin;
+
+        // Level configurations
+        const levels = {
+            1: { ballSpeed: 5, paddleWidth: 120, coinChance: 0.3, name: 'LEVEL 1' },
+            2: { ballSpeed: 7, paddleWidth: 90, coinChance: 0.4, name: 'LEVEL 2' }
+        };
+
+        // Paddle
+        const paddle = {
+            width: 120,
+            height: 16,
+            x: 340,
+            y: 470,
+            speed: 0,
+            targetX: 340
+        };
+
+        // Ball
+        let ball = {
+            x: 400,
+            y: 250,
+            radius: 10,
+            dx: 4,
+            dy: -4,
+            speed: 5,
+            trail: []
+        };
+
+        // Coins
+        let coinItems = [];
+
+        // Particles
+        let particles = [];
+
+        // Input
+        let keys = { left: false, right: false };
+        let mouseX = paddle.x + paddle.width / 2;
+
+        // Colors
+        const colors = {
+            paddle: '#00f5d4',
+            paddleGlow: 'rgba(0, 245, 212, 0.5)',
+            ball: '#ff006e',
+            ballGlow: 'rgba(255, 0, 110, 0.6)',
+            coin: '#ffd700',
+            coinGlow: 'rgba(255, 215, 0, 0.5)',
+            trail: 'rgba(255, 0, 110, 0.3)'
+        };
+
+        function resetBall() {
+            ball.x = 400;
+            ball.y = 200;
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 2);
+            ball.dy = -levels[level].ballSpeed;
+            ball.trail = [];
+        }
+
+        function spawnCoin() {
+            if (Math.random() < levels[level].coinChance) {
+                coinItems.push({
+                    x: 50 + Math.random() * 700,
+                    y: 100 + Math.random() * 200,
+                    radius: 15,
+                    rotation: 0,
+                    pulse: 0
+                });
+            }
+        }
+
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x, y,
+                    dx: (Math.random() - 0.5) * 8,
+                    dy: (Math.random() - 0.5) * 8,
+                    radius: 2 + Math.random() * 4,
+                    color,
+                    life: 1
+                });
+            }
+        }
+
+        function updateParticles() {
+            particles = particles.filter(p => {
+                p.x += p.dx;
+                p.y += p.dy;
+                p.life -= 0.02;
+                p.radius *= 0.98;
+                return p.life > 0;
+            });
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('rgb', 'rgba');
+                ctx.fill();
+            });
+        }
+
+        function drawBackground() {
+            // Dark gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#1a0a2e');
+            gradient.addColorStop(0.5, '#0d0d1a');
+            gradient.addColorStop(1, '#1a0a2e');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            // Center line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawPaddle() {
+            // Glow
+            ctx.shadowColor = colors.paddleGlow;
+            ctx.shadowBlur = 20;
+
+            // Main paddle
+            const gradient = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + paddle.height);
+            gradient.addColorStop(0, '#00f5d4');
+            gradient.addColorStop(1, '#00bbf9');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 4);
+            ctx.fill();
+
+            // Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.fillRect(paddle.x + 10, paddle.y + 2, paddle.width - 20, 3);
+
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBall() {
+            // Trail
+            ball.trail.forEach((pos, i) => {
+                const alpha = i / ball.trail.length * 0.4;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ball.radius * (i / ball.trail.length), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 0, 110, ${alpha})`;
+                ctx.fill();
+            });
+
+            // Glow
+            ctx.shadowColor = colors.ballGlow;
+            ctx.shadowBlur = 25;
+
+            // Main ball
+            const gradient = ctx.createRadialGradient(
+                ball.x - 3, ball.y - 3, 0,
+                ball.x, ball.y, ball.radius
+            );
+            gradient.addColorStop(0, '#ff4d8d');
+            gradient.addColorStop(1, '#ff006e');
+
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Highlight
+            ctx.beginPath();
+            ctx.arc(ball.x - 3, ball.y - 3, 3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+        }
+
+        function drawCoins() {
+            coinItems.forEach(coin => {
+                coin.rotation += 0.05;
+                coin.pulse += 0.1;
+
+                const scaleX = Math.cos(coin.rotation);
+                const pulseSize = 1 + Math.sin(coin.pulse) * 0.1;
+
+                // Glow
+                ctx.shadowColor = colors.coinGlow;
+                ctx.shadowBlur = 20;
+
+                // Coin
+                ctx.save();
+                ctx.translate(coin.x, coin.y);
+                ctx.scale(scaleX * pulseSize, pulseSize);
+
+                const gradient = ctx.createRadialGradient(-3, -3, 0, 0, 0, coin.radius);
+                gradient.addColorStop(0, '#fff7a3');
+                gradient.addColorStop(0.5, '#ffd700');
+                gradient.addColorStop(1, '#b8860b');
+
+                ctx.beginPath();
+                ctx.arc(0, 0, coin.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Dollar sign
+                ctx.fillStyle = '#8b6914';
+                ctx.font = 'bold 14px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('$', 0, 0);
+
+                ctx.restore();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function drawProgress() {
+            const progressWidth = 200;
+            const progressHeight = 6;
+            const x = canvas.width / 2 - progressWidth / 2;
+            const y = 15;
+            const progress = ballsHit / ballsPerLevel;
+
+            // Background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.roundRect(x, y, progressWidth, progressHeight, 3);
+            ctx.fill();
+
+            // Progress
+            const gradient = ctx.createLinearGradient(x, y, x + progressWidth * progress, y);
+            gradient.addColorStop(0, '#9d4edd');
+            gradient.addColorStop(1, '#c77dff');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(x, y, progressWidth * progress, progressHeight, 3);
+            ctx.fill();
+        }
+
+        function updatePaddle() {
+            // Smooth mouse following
+            const targetX = mouseX - paddle.width / 2;
+            paddle.x += (targetX - paddle.x) * 0.15;
+
+            // Keyboard controls
+            if (keys.left) paddle.x -= 10;
+            if (keys.right) paddle.x += 10;
+
+            // Bounds
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
+        }
+
+        function updateBall() {
+            // Trail
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > 10) ball.trail.shift();
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Wall collisions
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                ball.dx *= -1;
+                ball.x = Math.max(ball.radius, Math.min(canvas.width - ball.radius, ball.x));
+                createParticles(ball.x, ball.y, 'rgb(255, 0, 110)', 5);
+            }
+
+            // Top wall
+            if (ball.y - ball.radius < 0) {
+                ball.dy *= -1;
+                ball.y = ball.radius;
+                createParticles(ball.x, ball.y, 'rgb(255, 0, 110)', 5);
+            }
+
+            // Paddle collision
+            if (ball.y + ball.radius > paddle.y &&
+                ball.y - ball.radius < paddle.y + paddle.height &&
+                ball.x > paddle.x &&
+                ball.x < paddle.x + paddle.width) {
+                
+                // Calculate bounce angle based on where ball hits paddle
+                const hitPos = (ball.x - paddle.x) / paddle.width;
+                ball.dx = (hitPos - 0.5) * 10;
+                ball.dy = -Math.abs(ball.dy) * 1.02; // Slight speed increase
+                ball.y = paddle.y - ball.radius;
+
+                // Speed cap
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                if (speed > 12) {
+                    ball.dx = (ball.dx / speed) * 12;
+                    ball.dy = (ball.dy / speed) * 12;
+                }
+
+                score += 10;
+                ballsHit++;
+                updateHUD();
+                createParticles(ball.x, ball.y, 'rgb(0, 245, 212)', 15);
+                spawnCoin();
+
+                // Level complete check
+                if (ballsHit >= ballsPerLevel) {
+                    if (level === 2) {
+                        winGame();
+                    } else {
+                        levelComplete();
+                    }
+                }
+            }
+
+            // Ball lost
+            if (ball.y - ball.radius > canvas.height) {
+                gameOver();
+            }
+        }
+
+        function updateCoins() {
+            coinItems = coinItems.filter(coin => {
+                const dx = ball.x - coin.x;
+                const dy = ball.y - coin.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < ball.radius + coin.radius) {
+                    coins++;
+                    score += 50;
+                    updateHUD();
+                    createParticles(coin.x, coin.y, 'rgb(255, 215, 0)', 20);
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function updateHUD() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('coins').textContent = coins + ' 🪙';
+            document.getElementById('level-badge').textContent = levels[level].name;
+        }
+
+        function showOverlay(id) {
+            document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideAllOverlays() {
+            document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
+        }
+
+        function levelComplete() {
+            gameRunning = false;
+            document.getElementById('level-score').textContent = score;
+            document.getElementById('level-coins').textContent = coins;
+            showOverlay('level-overlay');
+        }
+
+        function nextLevel() {
+            level = 2;
+            ballsHit = 0;
+            paddle.width = levels[level].paddleWidth;
+            resetBall();
+            coinItems = [];
+            particles = [];
+            updateHUD();
+            hideAllOverlays();
+            gameRunning = true;
+        }
+
+        async function winGame() {
+            gameRunning = false;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-coins').textContent = coins;
+            
+            // Save score
+            if (currentUsername) {
+                await saveScore(true);
+            }
+            
+            showOverlay('win-overlay');
+        }
+
+        async function gameOver() {
+            gameRunning = false;
+            document.getElementById('go-score').textContent = score;
+            document.getElementById('go-coins').textContent = coins;
+            
+            // Save score
+            if (currentUsername) {
+                await saveScore(false);
+            }
+            
+            showOverlay('gameover-overlay');
+        }
+
+        function startGame() {
+            const usernameInput = document.getElementById('username-input');
+            const username = usernameInput.value.trim();
+            
+            if (!username) {
+                usernameInput.style.borderColor = '#ff006e';
+                usernameInput.placeholder = 'Please enter a username!';
+                setTimeout(() => {
+                    usernameInput.style.borderColor = 'rgba(0, 245, 212, 0.3)';
+                    usernameInput.placeholder = 'Enter your username';
+                }, 2000);
+                return;
+            }
+            
+            currentUsername = username;
+            score = 0;
+            coins = 0;
+            level = 1;
+            ballsHit = 0;
+            paddle.width = levels[level].paddleWidth;
+            paddle.x = canvas.width / 2 - paddle.width / 2;
+            coinItems = [];
+            particles = [];
+            resetBall();
+            updateHUD();
+            hideAllOverlays();
+            gameRunning = true;
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function gameLoop() {
+            drawBackground();
+            drawProgress();
+            drawCoins();
+            drawParticles();
+            drawPaddle();
+            drawBall();
+
+            if (gameRunning) {
+                updatePaddle();
+                updateBall();
+                updateCoins();
+                updateParticles();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = true;
+            if (e.key === 'ArrowRight') keys.right = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = false;
+            if (e.key === 'ArrowRight') keys.right = false;
+        });
+
+        // API Functions
+        async function saveScore(completed) {
+            try {
+                const response = await fetch(`${API_URL}/api/scores`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: currentUsername,
+                        score: score,
+                        coins: coins,
+                        level: level,
+                        completed: completed
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const rankText = data.rank === 1 
+                        ? '🥇 You\'re #1!' 
+                        : `Rank: #${data.rank}`;
+                    
+                    if (completed) {
+                        document.getElementById('win-rank').textContent = rankText;
+                    } else {
+                        document.getElementById('go-rank').textContent = rankText;
+                    }
+                    
+                    // Refresh leaderboard
+                    loadLeaderboard();
+                }
+            } catch (error) {
+                console.error('Error saving score:', error);
+            }
+        }
+
+        async function loadLeaderboard() {
+            const content = document.getElementById('leaderboard-content');
+            content.innerHTML = '<div class="loading">Loading...</div>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/leaderboard?limit=10`);
+                const data = await response.json();
+                
+                if (data.success && data.scores.length > 0) {
+                    let html = '';
+                    data.scores.forEach((entry, index) => {
+                        const rankClass = index === 0 ? 'top1' : index === 1 ? 'top2' : index === 2 ? 'top3' : '';
+                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                        html += `
+                            <div class="leaderboard-item">
+                                <span class="rank ${rankClass}">${medal || (index + 1)}</span>
+                                <span class="leaderboard-username" title="${entry.username}">${entry.username}</span>
+                                <span class="leaderboard-score">${entry.score}</span>
+                                <span class="leaderboard-coins">🪙${entry.coins}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add user's rank if they have a username
+                    if (currentUsername) {
+                        try {
+                            const userResponse = await fetch(`${API_URL}/api/user/${encodeURIComponent(currentUsername)}`);
+                            const userData = await userResponse.json();
+                            
+                            if (userData.success && userData.userScore) {
+                                // Find user's rank
+                                const userRank = data.scores.findIndex(s => s.username === currentUsername) + 1;
+                                if (userRank === 0) {
+                                    // User not in top 10, show their stats
+                                    html += `
+                                        <div class="user-rank">
+                                            <div class="user-rank-label">Your Best</div>
+                                            <div class="user-rank-value">${userData.userScore.best_score}</div>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error fetching user stats:', err);
+                        }
+                    }
+                    
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<div class="loading">No scores yet. Be the first!</div>';
+                }
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                content.innerHTML = '<div class="error">Failed to load leaderboard</div>';
+            }
+        }
+
+        // Allow Enter key to start game
+        document.getElementById('username-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startGame();
+            }
+        });
+
+        // Start
+        gameLoop();
+        loadLeaderboard();
+        
+        // Refresh leaderboard every 30 seconds
+        setInterval(loadLeaderboard, 30000);
+    </script>
+</body>
+</html>
+
+
